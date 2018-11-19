@@ -1,0 +1,12 @@
+[package]
+name = "socket-demo"
+version = "0.1.0"
+authors = ["Jonathan Pallant <jonathan.pallant@cambridgeconsultants.com>"]
+keywords = ["arm", "cortex-a", "socket", "linux"]
+categories = ["embedded", "linux"]
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/cambridgeconsultants/rust-beagleboardx15-demo"
+
+[dependencies]
+socket2 = "0.3"
+libc = "0.2"

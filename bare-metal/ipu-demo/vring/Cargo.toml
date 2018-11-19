@@ -1,0 +1,6 @@
+[package]
+name = "vring"
+version = "0.1.0"
+authors = ["Jonathan Pallant <jonathan.pallant@cambridgeconsultants.com>"]
+
+[dependencies]
