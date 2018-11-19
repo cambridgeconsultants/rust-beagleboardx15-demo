@@ -16,8 +16,8 @@ features = ["unproven"]
 version = "0.5"
 
 [dependencies.cortex-m-rt]
-path = "./third_party/cortex-m-rt"
 features = ["device"]
+version = "0.5.1"
 
 [dependencies.vring]
 path = "./vring"

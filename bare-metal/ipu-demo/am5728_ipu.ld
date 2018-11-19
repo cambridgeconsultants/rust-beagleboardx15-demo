@@ -31,8 +31,8 @@ MEMORY
 }
 
 /* # Entry point = reset vector */
-ENTRY(Reset);
-EXTERN(__RESET_VECTOR); /* depends on the `Reset` symbol */
+ENTRY(ResetAM5728);
+EXTERN(__RESET_VECTOR_AM5728); /* depends on the `ResetAM5728` symbol */
 
 /* # Exception vectors */
 /* This is effectively weak aliasing at the linker level */
@@ -72,7 +72,7 @@ SECTIONS
     LONG(_stack_start);
 
     /* Reset vector */
-    KEEP(*(.vector_table.reset_vector)); /* this is `__RESET_VECTOR` symbol */
+    KEEP(*(.vector_table.reset_vector_am5728)); /* this is `__RESET_VECTOR_AM5728` symbol */
     __reset_vector = ABSOLUTE(.);
 
     /* Exceptions */
@@ -97,6 +97,7 @@ SECTIONS
     . = ALIGN(4); /* 4-byte align the start (VMA) of this section */
     /* __srodata = ABSOLUTE(.); */
 
+    KEEP(*(.vector_table.reset_vector)); /* this is `__RESET_VECTOR` symbol */
     *(.rodata .rodata.*);
 
     . = ALIGN(4); /* 4-byte align the end (VMA) of this section */
@@ -109,11 +110,11 @@ SECTIONS
   {
     . = ALIGN(4); /* 4-byte align the start (VMA) of this section */
     __sdata = ABSOLUTE(.);
+    __edata = ABSOLUTE(.);
 
     *(.data .data.*);
 
     . = ALIGN(4); /* 4-byte align the end (VMA) of this section */
-    __edata = ABSOLUTE(.);
   } > RAM
 
   /* ### .bss */

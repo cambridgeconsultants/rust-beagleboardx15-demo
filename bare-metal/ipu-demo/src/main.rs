@@ -419,6 +419,30 @@ pub static RESOURCE_TABLE: ResourceTable = ResourceTable {
     },
 };
 
+#[doc(hidden)]
+#[link_section = ".vector_table.reset_vector_am5728"]
+#[no_mangle]
+pub static __RESET_VECTOR_AM5728: unsafe extern "C" fn() -> ! = ResetAM5728;
+
+extern "C" {
+    fn Reset() -> !;
+}
+
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn ResetAM5728() -> ! {
+    // At this stage, both of our CPUs are running in parallel with the same
+    // Stack Pointer. We need to stop Core 1 and let Core 0 run.
+    const AM5728_IPU_PERIPHERAL_ID0: *const u32 = 0xE00FFFE0 as *const u32;
+
+    if core::ptr::read_volatile(AM5728_IPU_PERIPHERAL_ID0) != 0 {
+        loop {
+            asm!("wfi");
+        }
+    }
+
+    Reset();
+}
+
 // ****************************************************************************
 //
 // Private Types / Traits
