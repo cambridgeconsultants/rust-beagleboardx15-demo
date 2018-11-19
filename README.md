@@ -340,31 +340,12 @@ Your code must complete the following steps:
 * Using assembly langauge (to guarantee the stack pointer isn't used), determine which core is running, then jump to core specific initialisation code.
 * In the core specific code, move the vector table to a chip-unique location (or just keep the second CPU shut-down).
 
-### Modifications to cortex-m-rt
+### Modifications to linker script
 
-For ease of development, we forked the `cortex-m-rt` package and add this minor change to support shutting down the second core on IPU1:
-
-```
-$ diff -r cortex-m-rt*
-diff -r cortex-m-rt-orig/src/lib.rs cortex-m-rt/src/lib.rs
-388a389
-> #![feature(asm)]
-465a467,475
->     // At this stage, both of our CPUs are running in parallel with the same
->     // Stack Pointer. We need to stop Core 1 and let Core 0 run.
->     const AM5728_IPU_PERIPHERAL_ID0: *const u32 = 0xE00FFFE0 as *const u32;
->     if core::ptr::read_volatile(AM5728_IPU_PERIPHERAL_ID0) != 0 {
->         loop {
->             asm!("wfi");
->         }
->     }
->
-```
-
-We also took `link.x.in` and added the following sections to support the AM5728 IPU:
+We took the cortex-m-rt standard `link.x.in` linker script and added the following sections to support the AM5728 IPU:
 
 ```
-$ diff third_party/cortex-m-rt/link.x.in  ./am5728_ipu.ld
+$ diff link.x.in ../rust-beagleboardx15-demo/bare-metal/ipu-demo/am5728_ipu.ld
 21,23c21,31
 < /* Provides information about the memory layout of the device */
 < /* This will be provided by the user (see `memory.x`) or by a Board Support Crate */
@@ -381,11 +362,33 @@ $ diff third_party/cortex-m-rt/link.x.in  ./am5728_ipu.ld
 >   IPC_DATA (RW) : ORIGIN = 0x9F000000, LENGTH = 1M,
 >   L2RAM    (RWX): ORIGIN = 0x20000000, LENGTH = 64K
 > }
-100c108
+26,27c34,35
+< ENTRY(Reset);
+< EXTERN(__RESET_VECTOR); /* depends on the `Reset` symbol */
+---
+> ENTRY(ResetAM5728);
+> EXTERN(__RESET_VECTOR_AM5728); /* depends on the `ResetAM5728` symbol */
+50a59,63
+> /* # Pre-initialization function */
+> /* If the user overrides this using the `pre_init!` macro or by creating a `__pre_init` function,
+>    then the function this points to will be called before the RAM is initialized. */
+> PROVIDE(__pre_init = DefaultPreInit);
+>
+67c80
+<     KEEP(*(.vector_table.reset_vector)); /* this is `__RESET_VECTOR` symbol */
+---
+>     KEEP(*(.vector_table.reset_vector_am5728)); /* this is `__RESET_VECTOR_AM5728` symbol */
+91a105
+>     KEEP(*(.vector_table.reset_vector)); /* this is `__RESET_VECTOR` symbol */
+100c114
 <   .data : AT(__erodata) /* LMA */
 ---
 >   .data :
-132a141,156
+103a118
+>     __edata = ABSOLUTE(.);
+108d122
+<     __edata = ABSOLUTE(.);
+132a147,162
 >   /* This is how we communicate with the kernel */
 >   .ipc_data : {
 >       KEEP(*(.tracebuffer .tracebuffer.*))
@@ -402,7 +405,7 @@ $ diff third_party/cortex-m-rt/link.x.in  ./am5728_ipu.ld
 >       KEEP(*(.version))
 >   } > FLASH
 >
-147a172,237
+147a178,243
 > /* Default IRQ handlers as weak symbols */
 > PROVIDE(Ipu1Irq16 = DefaultHandler);
 > PROVIDE(Ipu1Irq17 = DefaultHandler);
@@ -469,7 +472,7 @@ $ diff third_party/cortex-m-rt/link.x.in  ./am5728_ipu.ld
 > PROVIDE(Ipu1Irq78 = DefaultHandler);
 > PROVIDE(Ipu1Irq79 = DefaultHandler);
 >
-204a295,300
+204a301,306
 >
 > ASSERT(__einterrupts - __eexceptions <= 0x3c0, "
 > There can't be more than 240 interrupt handlers. This may be a bug in
