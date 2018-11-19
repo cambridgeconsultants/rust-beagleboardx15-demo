@@ -56,6 +56,11 @@ PROVIDE(SysTick = DefaultHandler);
 /* # Interrupt vectors */
 EXTERN(__INTERRUPTS); /* `static` variable similar to `__EXCEPTIONS` */
 
+/* # Pre-initialization function */
+/* If the user overrides this using the `pre_init!` macro or by creating a `__pre_init` function,
+   then the function this points to will be called before the RAM is initialized. */
+PROVIDE(__pre_init = DefaultPreInit);
+
 /* # User overridable symbols I */
 /* Lets the user place the stack in a different RAM region */
 PROVIDE(_stack_start = ORIGIN(RAM) + LENGTH(RAM));
