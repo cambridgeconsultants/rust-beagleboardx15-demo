@@ -9,7 +9,7 @@ The TI AM5728 contains a number of processing cores:
 
 This SoC can be found on the AM572x EVM, and the Beagleboard X15.
 
-Linux boots on the A15s from U-Boot, as you would expect. Running code on the other CPUs uses a Linux called called "remote processors" (also called "remote proc" or just "rproc").
+Linux boots on the A15s from U-Boot, as you would expect. Running code on the other CPUs uses a Linux feature called "remote processors" (also called "remote proc" or just "rproc").
 
 You can boot a vanilla kernel built with buildroot, but a number of features are missing including, it seems, omap-rpoc support. More research TBD.
 
@@ -237,7 +237,7 @@ uint32_t vector_table[] = {
 }
 ```
 
-If you dissamble a TI IPU image, you will see that the vector table is infact located at 0x0000_0400 and in an SMP image, there is a second table at 0x0000_0800 for the second core. The linker command scripts don't seem to make any reference to this mysterious IPU_BOOT_SPACE at 0x0.
+If you disassemble a TI IPU image, you will see that the vector table is in-fact located at 0x0000_0400 and in an SMP image, there is a second table at 0x0000_0800 for the second core. The linker command scripts don't seem to make any reference to this mysterious IPU_BOOT_SPACE at 0x0.
 
 It turns out, the linker scripts don't name a region but do link a piece of code to address 0x0. That code (Core_smp_asm.sv7M) looks like this:
 
@@ -329,7 +329,7 @@ reset0: .word   0x00000404      ; reset vector addr for core 0
 
 It seems *ducati* is the codename for the original dual Cortex-M3 multi-media acceleration subsystem on the OMAP4. I guess the name just stuck.
 
-Did you spot the two 32-bit values stored at `vecbase`? This is actually the vector table used to boot the CPU. They've left out the 14 exception vectors and 64 interrupt vectors and replaced it with machien code - let's hope the boot code never crashes! The reset vector at 0x0000_0004 jumps to `ti_sysbios_family_arm_ducati_Core_reset`. This routine reads address 0xE00FFFE0 (the [Peripheral ID0 register](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0439b/BCGFHGCC.html)) to determine which core is running (as both cores are executing the same code at this point). If it's zero, we assume we are Core 0, and jump to the vector at 0x0000_0404. If it's non-zero we assume we are Core 1 and wait for Core 0 to write to 0x0000_000C. When that happens, Core 1 takes a stack pointer from 0x0000_0008 and jumps to the vector written to 0x0000_000C. Once running one assumes the CPUs change their *Vector Table Offset Register* (VTOR) to point to their own vector tables, to handle any exceptions or interrupts appropriately.
+Did you spot the two 32-bit values stored at `vecbase`? This is actually the vector table used to boot the CPU. They've left out the 14 exception vectors and 64 interrupt vectors and replaced it with machine code - let's hope the boot code never crashes! The reset vector at 0x0000_0004 jumps to `ti_sysbios_family_arm_ducati_Core_reset`. This routine reads address 0xE00FFFE0 (the [Peripheral ID0 register](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0439b/BCGFHGCC.html)) to determine which core is running (as both cores are executing the same code at this point). If it's zero, we assume we are Core 0, and jump to the vector at 0x0000_0404. If it's non-zero we assume we are Core 1 and wait for Core 0 to write to 0x0000_000C. When that happens, Core 1 takes a stack pointer from 0x0000_0008 and jumps to the vector written to 0x0000_000C. Once running one assumes the CPUs change their *Vector Table Offset Register* (VTOR) to point to their own vector tables, to handle any exceptions or interrupts appropriately.
 
 ### Building your own bare-metal image
 
@@ -337,7 +337,7 @@ Your code must complete the following steps:
 
 * Include a `.resource_table` section.
 * Include a vector table at 0x0000_0000.
-* Using assembly langauge (to guarantee the stack pointer isn't used), determine which core is running, then jump to core specific initialisation code.
+* Using assembly language (to guarantee the stack pointer isn't used), determine which core is running, then jump to core specific initialisation code.
 * In the core specific code, move the vector table to a chip-unique location (or just keep the second CPU shut-down).
 
 ### Modifications to linker script
